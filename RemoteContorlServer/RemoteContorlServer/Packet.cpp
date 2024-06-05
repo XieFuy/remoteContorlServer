@@ -35,15 +35,15 @@ CPacket::CPacket(const BYTE* pData, size_t& nSize)
 	for (;i<nSize;i++)
 	{
 		if (*((WORD*)pData+i) == 0xFEFF)
-		{
-			i += 2;
+		{		
 			this->m_head = *((WORD*)(pData + i));
+			i += 2;
 			break;
 		}
 	}
 
 	//ÅÐ¶Ï°ü
-	if (i+2+4+2+2 > nSize)
+	if (i+2+4+2 > nSize)
 	{
 		nSize = 0;
 		return;
@@ -51,6 +51,7 @@ CPacket::CPacket(const BYTE* pData, size_t& nSize)
 
 	this->m_dataLenght = *((DWORD*)(pData + i));
 	i += 4;
+
 	if (this->m_dataLenght + i > nSize)
 	{
 		nSize = 0;
@@ -82,4 +83,29 @@ CPacket::CPacket(const BYTE* pData, size_t& nSize)
 	}
 	nSize = 0;
 	return;
+}
+
+CPacket& CPacket::operator=(const CPacket& packet)
+{
+	this->m_head = packet.m_head;
+	this->m_cmd = packet.m_cmd;
+	this->m_dataLenght = packet.m_dataLenght;
+	this->m_data = packet.m_data;
+	this->m_sum = packet.m_sum;
+	return *this;
+}
+
+WORD CPacket::getCmd() 
+{
+	return this->m_cmd;
+}
+
+DWORD CPacket::getDataLenght()
+{
+	return this->m_dataLenght;
+}
+
+std::string& CPacket::getStrData()
+{
+	return this->m_data;
 }

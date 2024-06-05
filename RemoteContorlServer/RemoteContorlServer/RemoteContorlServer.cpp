@@ -4,6 +4,8 @@
 #include "pch.h"
 #include "framework.h"
 #include "RemoteContorlServer.h"
+#include"Command.h"
+#include"ServerSocket.h"
 
 #ifdef _DEBUG
 #define new DEBUG_NEW
@@ -34,7 +36,10 @@ int main()
         else
         {
             // TODO: 在此处为应用程序的行为编写代码。
-			while (1);
+			//启动服务器
+			CCommand cmd;
+			CServerSocket* pSer = CServerSocket::getInstance();
+			pSer->RunServer(&cmd);
         }
     }
     else

@@ -7,6 +7,10 @@ public:
 	CPacket();
 	CPacket(WORD cmd,const BYTE* pData,size_t nDataSize); //封包
 	CPacket(const BYTE* pData,size_t& nSize); //解包
+	CPacket& operator=(const CPacket& packet);
+	WORD getCmd(); //获取包命令
+	DWORD getDataLenght();//获取包数据长度
+	std::string& getStrData(); //获取包数据
 private:
 	WORD m_head; //包头
 	DWORD m_dataLenght; //包的数据和命令以及校验和的长度
