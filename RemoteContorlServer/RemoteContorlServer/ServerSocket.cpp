@@ -202,13 +202,16 @@ size_t CServerSocket::SendAllDataOfOnePacket(CPacket& packet)
 {
 	size_t alReadyToSend = 0;
 	size_t notToSend = packet.getDataLenght()+6;
+	size_t stepSize = 102400;
+	std::string data = "";
 	std::vector<char> strData;
 	strData.resize(packet.getDataLenght()+6);
 	char* pData = strData.data();
 	memset(pData,0,packet.getDataLenght()+6);
-	TRACE("sizeof(packet)的大小为:%d\r\n",sizeof(packet));
-	memcpy(pData,&packet,packet.getDataLenght()+6);
-
+	packet.toByteData(data);
+	memcpy(pData,data.c_str(),data.size());  //报错导致的原因是超出缓冲区的长度
+	TRACE("拷贝入发送缓冲区的数据长度的大小为:%d\r\n", strData.size());
+	CTestTool::Dump((const BYTE*)pData,data.size());
 
 	while (alReadyToSend < notToSend)
 	{

@@ -109,3 +109,20 @@ std::string& CPacket::getStrData()
 {
 	return this->m_data;
 }
+
+void CPacket::toByteData(std::string& data)
+{
+	data.resize(this->m_dataLenght + 6);
+	char* pData = (char*)data.c_str();
+	memcpy(pData,&this->m_head,sizeof(this->m_head));
+	pData += 2;
+	memcpy(pData,&this->m_dataLenght,sizeof(this->m_dataLenght));
+	pData += 4;
+	memcpy(pData,&this->m_cmd,sizeof(this->m_cmd));
+	pData += 2;
+	memcpy(pData,this->m_data.c_str(),this->m_data.size());
+	pData += this->m_data.size();
+	memcpy(pData, &this->m_sum, sizeof(this->m_sum));
+	pData += 2;
+	TRACE("进行转换后整个包的数据长度为: %d\r\n",data.size());
+}

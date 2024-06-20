@@ -4,7 +4,7 @@
 #include<list>
 #include"Packet.h"
 #include"ThreadPool.h"
-
+#include<atlimage.h>
 //命令类 包含命令执行函数
 class CCommand:public CThreadFuncBase
 {

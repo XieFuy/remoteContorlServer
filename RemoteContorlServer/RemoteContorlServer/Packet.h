@@ -11,6 +11,7 @@ public:
 	WORD getCmd(); //获取包命令
 	DWORD getDataLenght();//获取包数据长度
 	std::string& getStrData(); //获取包数据
+	void toByteData(std::string& data); //将整个包的数据转为二进制数据
 private:
 	WORD m_head; //包头
 	DWORD m_dataLenght; //包的数据和命令以及校验和的长度
