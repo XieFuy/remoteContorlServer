@@ -5,6 +5,8 @@
 #include"Packet.h"
 #include"ThreadPool.h"
 #include<atlimage.h>
+#include"MouseEvent.h"
+#include"TestTool.h"
 //命令类 包含命令执行函数
 class CCommand:public CThreadFuncBase
 {
@@ -27,5 +29,6 @@ public:
 	int LockMachine(CPacket& packet, std::list<CPacket>& sendLst); //锁机 8
 	int UnLockMachine(CPacket& packet, std::list<CPacket>& sendLst); //解锁 9
 	int testConnect(CPacket& packet, std::list<CPacket>& sendLst);//测试连接 1981
+	int DealMouseEvent(CPacket& packet,std::list<CPacket>& sendLst); //鼠标操作处理
 };
 

@@ -10,6 +10,25 @@ int CCommand::testConnect(CPacket& packet, std::list<CPacket>& sendLst)
 	return packet.getCmd();
 }
 
+int CCommand::DealMouseEvent(CPacket &packet, std::list<CPacket>& sendLst)
+{   
+	CMouseEvent mouseEvent;
+	CTestTool::Dump((const BYTE*)packet.getStrData().c_str(), packet.getStrData().size());
+	memcpy(&mouseEvent,packet.getStrData().c_str(),packet.getStrData().size());
+	TRACE("isLeftBtn:%d isRight:%d isLeftBtnPress:%d isRightBtnPress:%d isLeftUp: %d isRightUp:%d isMoving:%d\n",mouseEvent.isLeftBtn,
+		mouseEvent.isRightBtn,mouseEvent.isLeftBtnPress,mouseEvent.isRightBtnPress,
+		mouseEvent.isLeftBtnUp,mouseEvent.isRightBtnUp,mouseEvent.isMoveing);
+
+	//判断是否是鼠标移动
+	if (mouseEvent.isMoveing)
+	{
+		::SetCursorPos(mouseEvent.x,mouseEvent.y);
+	}
+	sendLst.push_back(CPacket(10,nullptr,0));
+	SetEvent(this->m_signal);
+	return packet.getCmd();
+}
+
 CCommand::CCommand()
 {
 	this->m_signal = CreateEvent(nullptr,FALSE,FALSE,nullptr);
@@ -29,6 +48,7 @@ CCommand::CCommand()
 	  {8,&CCommand::LockMachine},
 	  {9,&CCommand::UnLockMachine},
 	  {1981,&CCommand::testConnect},
+	  {10,&CCommand::DealMouseEvent},
 	  {-1,nullptr}
 	};
 

@@ -159,11 +159,10 @@ void CServerSocket::RecvAllDataOfOnePacket()
 		data.push_back(*pos);
 	}
 	CTestTool::Dump((const BYTE*)data.c_str(),ret);
+
 	//进行解包
 	size_t nSize = ret;
-	memset(&this->m_packet,0,sizeof(this->m_packet));
-	memcpy(&this->m_packet,data.c_str(),ret);
-	//this->m_packet = CPacket((const BYTE*)data.c_str(),nSize);
+	this->m_packet = CPacket((const BYTE*)data.c_str(),nSize);
 	TRACE("解包所消耗的字节数:%d\r\n",nSize);
 }
 
