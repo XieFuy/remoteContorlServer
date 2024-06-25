@@ -14,9 +14,12 @@ private:
 	typedef int(CCommand::* LPFUNC)(CPacket&, std::list<CPacket>&);
 	std::map<WORD, LPFUNC> m_funcMap;
 	CThreadPool m_threadPool; //线程池，将任务函数投递到线程池中执行
+	CThreadPool m_threadPoolMouseEvent;
 public:
 	HANDLE m_signal; //信号量，线程函数结束时通知主线程可以进行发送数据包
+	HANDLE m_signalMouseEvent;
 	int ExecCommand(CPacket& packet,std::list<CPacket>& sendLst); //执行命令
+	int ExecCommandMouseEvent(CPacket& packet, std::list<CPacket>& sendLst);
 	CCommand();
 	~CCommand();
 	int RunFile(CPacket& packet, std::list<CPacket>& sendLst); //运行文件  1

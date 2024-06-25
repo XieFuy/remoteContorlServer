@@ -24,14 +24,37 @@ int CCommand::DealMouseEvent(CPacket &packet, std::list<CPacket>& sendLst)
 	{
 		::SetCursorPos(mouseEvent.x,mouseEvent.y);
 	}
+	if (mouseEvent.isLeftBtn)  //左键
+	{
+		if (mouseEvent.isLeftBtnPress) //左键按下
+		{
+			mouse_event(MOUSEEVENTF_LEFTDOWN,mouseEvent.x,mouseEvent.y,0,GetMessageExtraInfo());
+		}
+		if (mouseEvent.isLeftBtnUp) //左键弹起
+		{
+			mouse_event(MOUSEEVENTF_LEFTUP,mouseEvent.x,mouseEvent.y,0,GetMessageExtraInfo());
+		}
+	}
+	if (mouseEvent.isRightBtn)//右键
+	{
+		if (mouseEvent.isRightBtnPress)//右键按下
+		{
+			mouse_event(MOUSEEVENTF_RIGHTDOWN,mouseEvent.x,mouseEvent.y,0,GetMessageExtraInfo());
+		}
+		if (mouseEvent.isRightBtnUp) //右键弹起
+		{
+			mouse_event(MOUSEEVENTF_RIGHTUP,mouseEvent.x,mouseEvent.y,0,GetMessageExtraInfo());
+		}
+	}
 	sendLst.push_back(CPacket(10,nullptr,0));
-	SetEvent(this->m_signal);
+	SetEvent(this->m_signalMouseEvent);
 	return packet.getCmd();
 }
 
 CCommand::CCommand()
 {
 	this->m_signal = CreateEvent(nullptr,FALSE,FALSE,nullptr);
+	this->m_signalMouseEvent = CreateEvent(nullptr,FALSE,FALSE,nullptr);
 	//加载功能函数到map中
 	struct 
 	{
@@ -170,4 +193,17 @@ int CCommand::ExecCommand(CPacket& packet,std::list<CPacket>& sendLst)
 	this->m_threadPool.DespatchWorker(this,(LPMEMWORKFUNC)pr->second,arg);
 	return 0;
 	//return (this->*pr->second)(packet,sendLst);
+}
+
+int CCommand::ExecCommandMouseEvent(CPacket& packet, std::list<CPacket>& sendLst)
+{
+	std::map<WORD, LPFUNC>::iterator pr = this->m_funcMap.find(packet.getCmd());
+	if (pr == this->m_funcMap.end())//表示没有对应的命令号
+	{
+		return -1;
+	}
+	//将需要运行的对应的函数传递到线程池中
+	ArgList arg(&packet, &sendLst);
+	this->m_threadPoolMouseEvent.DespatchWorker(this, (LPMEMWORKFUNC)pr->second, arg);
+	return 0;
 }
