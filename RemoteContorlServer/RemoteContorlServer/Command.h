@@ -7,6 +7,7 @@
 #include<atlimage.h>
 #include"MouseEvent.h"
 #include"TestTool.h"
+#include<direct.h>
 //命令类 包含命令执行函数
 class CCommand:public CThreadFuncBase
 {

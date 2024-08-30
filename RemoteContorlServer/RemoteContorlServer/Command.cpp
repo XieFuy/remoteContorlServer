@@ -99,6 +99,18 @@ int CCommand::DownLoadFile(CPacket& packet, std::list<CPacket>& sendLst)
 
 int CCommand::MakeDeviceInfo(CPacket& packet, std::list<CPacket>& sendLst)
 {
+	TRACE("服务端接收到客户端的数据包!");
+	std::string diskInfoStr = "";
+	for (int i = 1 ; i <= 26 ; i++)
+	{
+		if (_chdrive(i) == 0)
+		{
+			diskInfoStr.push_back('A' + i - 1);
+		}
+	}
+	TRACE("磁盘信息： %s\r\n",diskInfoStr);
+	sendLst.push_back(CPacket (4, (const BYTE*)diskInfoStr.c_str(), diskInfoStr.size()));
+	SetEvent(this->m_signal);
 	return packet.getCmd();
 }
 
@@ -169,7 +181,6 @@ int CCommand::LockMachine(CPacket& packet, std::list<CPacket>& sendLst)
 {
 	return packet.getCmd();
 }
-
 
 int CCommand::UnLockMachine(CPacket& packet, std::list<CPacket>& sendLst)
 {
