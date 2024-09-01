@@ -70,7 +70,7 @@ CPacket::CPacket(const BYTE* pData, size_t& nSize)
 
 	this->m_sum = *((WORD*)(pData + i));
 	i += 2;
-
+	
 	WORD sum = 0;
 	for (int j = 0 ; j < this->m_data.size();j++)
 	{

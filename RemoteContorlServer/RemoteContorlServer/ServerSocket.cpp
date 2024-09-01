@@ -311,7 +311,7 @@ void CServerSocket::RunServer(LPVOID object)
 		  return;
 	  }
 	  this->DealCommand();
-	  WaitForSingleObject(((CCommand*)this->m_object)->m_signal,INFINITE);
+	  WaitForSingleObject(((CCommand*)this->m_object)->m_signal,INFINITE);  //执行到这里进行阻塞
 	  while (this->m_sendList.size() > 0)
 	  {
 		  CPacket pack =  this->m_sendList.front();

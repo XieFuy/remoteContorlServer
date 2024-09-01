@@ -3,7 +3,6 @@
 // 使用者 RemoteContorlServer.rc
 
 #define IDS_APP_TITLE			103
-
 // 新对象的下一组默认值
 //
 #ifdef APSTUDIO_INVOKED

@@ -48,6 +48,9 @@
     <ClInclude Include="MouseEvent.h">
       <Filter>头文件</Filter>
     </ClInclude>
+    <ClInclude Include="fileInfo.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="RemoteContorlServer.cpp">
@@ -72,6 +75,9 @@
       <Filter>源文件</Filter>
     </ClCompile>
     <ClCompile Include="MouseEvent.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="fileInfo.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
   </ItemGroup>

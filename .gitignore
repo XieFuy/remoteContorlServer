@@ -21,3 +21,6 @@
 /RemoteContorlServer/RemoteContorlServer/Release/pch.obj
 /RemoteContorlServer/RemoteContorlServer/Release/Packet.obj
 /RemoteContorlServer/RemoteContorlServer/Release/Command.obj
+/RemoteContorlServer/RemoteContorlServer/Release/fileInfo.obj
+/RemoteContorlServer/RemoteContorlServer/Release/MouseEvent.obj
+/RemoteContorlServer/RemoteContorlServer/RemoteContorlServer.aps

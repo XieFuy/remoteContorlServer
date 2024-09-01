@@ -1,4 +1,5 @@
 #pragma once
+
 #include<Windows.h>
 #include<map>
 #include<list>
@@ -8,6 +9,8 @@
 #include"MouseEvent.h"
 #include"TestTool.h"
 #include<direct.h>
+#include"fileInfo.h"
+
 //命令类 包含命令执行函数
 class CCommand:public CThreadFuncBase
 {

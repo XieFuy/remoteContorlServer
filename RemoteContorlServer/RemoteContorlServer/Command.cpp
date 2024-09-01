@@ -121,7 +121,59 @@ int CCommand::MakeDiretorInfo(CPacket& packet, std::list<CPacket>& sendLst)
 
 int CCommand::MakeFileInfo(CPacket& packet, std::list<CPacket>& sendLst)
 {
-	 
+	TRACE("文件信息获取服务端执行！ 接收到的文件路径为：%s\r\n",packet.getStrData().c_str());
+	//进行遍历当前路径下的所有文件和文件夹
+	char path[MAX_PATH] = {0};
+	memcpy(path, packet.getStrData().c_str(),packet.getStrData().size());
+	strcat(path,"*");
+	WIN32_FIND_DATA hFindData;
+	HANDLE hFindFile =   FindFirstFile(path,&hFindData);
+	do
+	{
+		//将每一个文件信息进行发送到客户端中
+		if (lstrcmp(hFindData.cFileName,".") == 0 || lstrcmp(hFindData.cFileName,"..")==0)
+		{
+			continue;
+		}
+		CFileInfo* fileInfo = new CFileInfo();
+		fileInfo->fileName = hFindData.cFileName;
+		if (hFindData.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY) //如果文件类型是文件夹
+		{
+			fileInfo->fileType = "文件夹";
+		}
+		else//为普通文件
+		{
+			fileInfo->fileType = "文件";
+		}
+
+		if (fileInfo->fileType == "文件")
+		{
+			ULARGE_INTEGER fileSize;
+			fileSize.LowPart = hFindData.nFileSizeLow;
+			fileSize.HighPart = hFindData.nFileSizeHigh;
+			ULONGLONG sizeInBytes = fileSize.QuadPart;
+			fileInfo->CountFileSize(sizeInBytes);
+		}	
+		fileInfo->ConvertFileAccessTime(hFindData.ftLastAccessTime);		
+
+		//将结构体进行序列化，然后进行发包传输
+		std::string sendData = "";
+		sendData += fileInfo->fileName;
+		sendData += "-";
+		sendData += fileInfo->fileSize;
+		sendData += "-";
+		sendData += fileInfo->fileType;
+		sendData += "-";
+		sendData += fileInfo->fileAccessTime;
+		sendData += "-";
+		TRACE("发送的字符串为：%s\r\n",sendData.c_str());
+		CPacket packet(6,(const BYTE*)sendData.c_str(),sendData.size());
+		sendLst.push_back(packet);
+		TRACE("测试打印当前文件：%s 的大小为：%s 文件类型为：%s 最新访问时间：%s\r\n",fileInfo->fileName.c_str(),fileInfo->fileSize.c_str(),fileInfo->fileType.c_str(),fileInfo->fileAccessTime.c_str());
+		delete fileInfo;
+		fileInfo = nullptr;
+	} while (FindNextFile(hFindFile,&hFindData));
+	SetEvent(this->m_signal);
 	return packet.getCmd();
 }
 
