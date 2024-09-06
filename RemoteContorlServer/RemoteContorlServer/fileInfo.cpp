@@ -59,11 +59,11 @@ void CFileInfo::ConvertFileAccessTime(const FILETIME& fileTime)
 	std::string second = std::to_string(stLocal.wSecond);
  
 	this->fileAccessTime  += year;
-	this->fileAccessTime += "Äê";
+	this->fileAccessTime += "-";
 	this->fileAccessTime += month;
-	this->fileAccessTime += "ÔÂ";
+	this->fileAccessTime += "-";
 	this->fileAccessTime += day;
-	this->fileAccessTime += "ÈÕ";
+	//this->fileAccessTime += "-";
 	this->fileAccessTime += "  ";
 	this->fileAccessTime += hour;
 	this->fileAccessTime += ":";

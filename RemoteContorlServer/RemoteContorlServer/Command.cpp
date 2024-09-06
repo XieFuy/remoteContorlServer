@@ -84,11 +84,25 @@ CCommand::CCommand()
 
 int CCommand::RunFile(CPacket& packet, std::list<CPacket>& sendLst)
 {
+	TRACE("运行文件已被执行！传送过来的路径信息：%s\r\n",packet.getStrData().c_str());
+	//将单字节转为多字节
+	int len = MultiByteToWideChar(CP_UTF8, 0, packet.getStrData().c_str(), -1, nullptr, 0);
+	std::wstring wstr(len, '\0');
+	MultiByteToWideChar(CP_UTF8, 0, packet.getStrData().c_str(), -1, &wstr[0], len);
+	HINSTANCE ret =  ShellExecuteW(nullptr,nullptr,wstr.data(),nullptr,nullptr,SW_SHOWNORMAL);
+	sendLst.push_back(CPacket(1,nullptr,0));
+	SetEvent(this->m_signal);
 	return packet.getCmd();
 }
 
 int CCommand::DelteRemoteFile(CPacket& packet, std::list<CPacket>& sendLst)
 {
+	int len = MultiByteToWideChar(CP_UTF8,0, packet.getStrData().c_str(),-1,nullptr,0);
+	std::wstring str(len, '\0');
+	MultiByteToWideChar(CP_UTF8,0, packet.getStrData().c_str(),-1,&str[0],len);
+	DeleteFileW(str.data());
+	sendLst.push_back(CPacket(2,nullptr,0));
+	SetEvent(this->m_signal);
 	return packet.getCmd();
 }
 
@@ -159,13 +173,13 @@ int CCommand::MakeFileInfo(CPacket& packet, std::list<CPacket>& sendLst)
 		//将结构体进行序列化，然后进行发包传输
 		std::string sendData = "";
 		sendData += fileInfo->fileName;
-		sendData += "-";
+		sendData += "#";
 		sendData += fileInfo->fileSize;
-		sendData += "-";
+		sendData += "#";
 		sendData += fileInfo->fileType;
-		sendData += "-";
+		sendData += "#";
 		sendData += fileInfo->fileAccessTime;
-		sendData += "-";
+		sendData += "#";
 		TRACE("发送的字符串为：%s\r\n",sendData.c_str());
 		CPacket packet(6,(const BYTE*)sendData.c_str(),sendData.size());
 		sendLst.push_back(packet);
