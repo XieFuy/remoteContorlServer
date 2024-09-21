@@ -10,7 +10,7 @@
 #include"TestTool.h"
 #include<direct.h>
 #include"fileInfo.h"
-
+#include<string.h>
 //命令类 包含命令执行函数
 class CCommand:public CThreadFuncBase
 {
@@ -19,6 +19,9 @@ private:
 	std::map<WORD, LPFUNC> m_funcMap;
 	CThreadPool m_threadPool; //线程池，将任务函数投递到线程池中执行
 	CThreadPool m_threadPoolMouseEvent;
+	static FILE* m_pFile ;
+ 	static long long lenght ;
+	static long long alreadySend ;
 public:
 	HANDLE m_signal; //信号量，线程函数结束时通知主线程可以进行发送数据包
 	HANDLE m_signalMouseEvent;

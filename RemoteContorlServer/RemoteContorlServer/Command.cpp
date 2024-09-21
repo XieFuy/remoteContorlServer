@@ -1,6 +1,9 @@
 #include "pch.h"
 #include "Command.h"
 
+FILE* CCommand::m_pFile = nullptr;
+long long CCommand::alreadySend = 0;
+long long CCommand::lenght = 0;
 
 int CCommand::testConnect(CPacket& packet, std::list<CPacket>& sendLst)
 {
@@ -108,6 +111,64 @@ int CCommand::DelteRemoteFile(CPacket& packet, std::list<CPacket>& sendLst)
 
 int CCommand::DownLoadFile(CPacket& packet, std::list<CPacket>& sendLst)
 {
+	TRACE("下载的文件为：%s\r\n", packet.getStrData().c_str());
+
+	//判断字符串是否包含#号，如果包含则发送文件的大小
+	if (packet.getStrData().at(packet.getStrData().size() - 1 ) == '#')
+	{
+		packet.getStrData().pop_back();
+		TRACE("去除后标志为：%s\r\n", packet.getStrData().c_str());
+
+		CCommand::alreadySend = 0; //表示已经发送的字节数
+		CCommand::lenght = 0;
+		CCommand::m_pFile = nullptr;
+
+		//遇到中文使用宽字节来进行文件读写
+		int len = MultiByteToWideChar(CP_UTF8, 0, packet.getStrData().c_str(), -1, nullptr, 0);
+		std::wstring str(len, '\0');
+		MultiByteToWideChar(CP_UTF8, 0, packet.getStrData().c_str(), -1, &str[0], len);
+
+		//打开该文件，并且将文件的大小发送给客户端
+		CCommand::m_pFile = _wfopen(str.data(), L"rb");
+		if (CCommand::m_pFile == nullptr)
+		{
+			TRACE("打开文件失败：%s[%d]：%s  Error:%d\r\n", __FILE__, __LINE__, __FUNCTION__, errno);
+			sendLst.push_back(CPacket(100, nullptr, 0));
+			SetEvent(this->m_signal);
+			return -1;
+		}
+		//进行计算文件的大小
+		fseek(CCommand::m_pFile, 0, SEEK_END);
+		CCommand::lenght = _ftelli64(CCommand::m_pFile);
+		fseek(CCommand::m_pFile, 0, SEEK_SET);
+		char buffer[sizeof(long long)] = { 0 };
+		memcpy(buffer, &CCommand::lenght, sizeof(CCommand::lenght));
+		sendLst.push_back(CPacket(3, (const BYTE*)buffer, strlen(buffer)));
+		SetEvent(this->m_signal);
+		return packet.getCmd();
+	}
+	else  //进行读取文件，并且将读取的数据发送到客户端
+	{
+		//进行文件断点续传传输
+		//char bufferSize[102400] = { 0 }; //每次发送文件内容的大小
+		char* bufferSize = new char[307200];
+		if(alreadySend < lenght)
+		{
+			memset(bufferSize, 0, 307200);
+			size_t size = fread(bufferSize, 1, 307200, CCommand::m_pFile);
+			alreadySend += size;
+			sendLst.push_back(CPacket(101, (const BYTE*)bufferSize, size));
+			delete[] bufferSize;
+			SetEvent(this->m_signal);
+			return packet.getCmd();
+		}
+		else
+		{
+			fclose(CCommand::m_pFile);
+			CCommand::alreadySend = 0;
+			CCommand::lenght = 0;
+		}
+	}
 	return packet.getCmd();
 }
 
@@ -140,17 +201,34 @@ int CCommand::MakeFileInfo(CPacket& packet, std::list<CPacket>& sendLst)
 	char path[MAX_PATH] = {0};
 	memcpy(path, packet.getStrData().c_str(),packet.getStrData().size());
 	strcat(path,"*");
-	WIN32_FIND_DATA hFindData;
-	HANDLE hFindFile =   FindFirstFile(path,&hFindData);
+	TRACE("接收到的路径信息：%s\r\n",path);
+	
+	//转为宽字节
+	int len = MultiByteToWideChar(CP_UTF8,0,path,-1,nullptr,0);
+	std::wstring wPath(len,'\0');
+	MultiByteToWideChar(CP_UTF8,0,path,-1,&wPath[0],len);
+
+
+	WIN32_FIND_DATAW hFindData;
+	HANDLE hFindFile =  FindFirstFileW(wPath.data(),&hFindData);
 	do
 	{
 		//将每一个文件信息进行发送到客户端中
-		if (lstrcmp(hFindData.cFileName,".") == 0 || lstrcmp(hFindData.cFileName,"..")==0)
+		if (lstrcmpW(hFindData.cFileName,L".") == 0 || lstrcmpW(hFindData.cFileName,L"..")==0)
 		{
 			continue;
 		}
 		CFileInfo* fileInfo = new CFileInfo();
-		fileInfo->fileName = hFindData.cFileName;
+
+		std::wstring temp = hFindData.cFileName; //记住 std::string 转为std::wstring使用的是CP_UTF8  std::wstring 转为std::string 使用的是CP_CAP
+		OutputDebugStringW(temp.data());
+		len = WideCharToMultiByte(CP_ACP, 0, &temp[0], temp.size(), nullptr, 0, nullptr, nullptr);
+		std::string str(len, '\0');
+		WideCharToMultiByte(CP_ACP, 0, &temp[0], temp.size(), &str[0], len, nullptr, nullptr);
+		TRACE("转化后的文件名为: %s\r\n",str.c_str());
+
+		fileInfo->fileName = str;
+		//fileInfo->fileName = hFindData.cFileName;
 		if (hFindData.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY) //如果文件类型是文件夹
 		{
 			fileInfo->fileType = "文件夹";
@@ -181,12 +259,13 @@ int CCommand::MakeFileInfo(CPacket& packet, std::list<CPacket>& sendLst)
 		sendData += fileInfo->fileAccessTime;
 		sendData += "#";
 		TRACE("发送的字符串为：%s\r\n",sendData.c_str());
+			
 		CPacket packet(6,(const BYTE*)sendData.c_str(),sendData.size());
 		sendLst.push_back(packet);
 		TRACE("测试打印当前文件：%s 的大小为：%s 文件类型为：%s 最新访问时间：%s\r\n",fileInfo->fileName.c_str(),fileInfo->fileSize.c_str(),fileInfo->fileType.c_str(),fileInfo->fileAccessTime.c_str());
 		delete fileInfo;
 		fileInfo = nullptr;
-	} while (FindNextFile(hFindFile,&hFindData));
+	} while (FindNextFileW(hFindFile,&hFindData));
 	SetEvent(this->m_signal);
 	return packet.getCmd();
 }
