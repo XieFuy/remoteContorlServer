@@ -4,6 +4,8 @@
 FILE* CCommand::m_pFile = nullptr;
 long long CCommand::alreadySend = 0;
 long long CCommand::lenght = 0;
+std::wstring CCommand::updataFilePath = L"";
+int CCommand::count = 0;
 
 int CCommand::testConnect(CPacket& packet, std::list<CPacket>& sendLst)
 {
@@ -68,7 +70,7 @@ CCommand::CCommand()
 	  {2,&CCommand::DelteRemoteFile},
 	  {3,&CCommand::DownLoadFile},
 	  {4,&CCommand::MakeDeviceInfo},
-	  {5,&CCommand::MakeDiretorInfo},
+	  {5,&CCommand::UpdataFile},
 	  {6,&CCommand::MakeFileInfo},
 	  {7,&CCommand::StartScreen},
 	  {8,&CCommand::LockMachine},
@@ -143,7 +145,7 @@ int CCommand::DownLoadFile(CPacket& packet, std::list<CPacket>& sendLst)
 		fseek(CCommand::m_pFile, 0, SEEK_SET);
 		char buffer[sizeof(long long)] = { 0 };
 		memcpy(buffer, &CCommand::lenght, sizeof(CCommand::lenght));
-		sendLst.push_back(CPacket(3, (const BYTE*)buffer, strlen(buffer)));
+		sendLst.push_back(CPacket(3, (const BYTE*)buffer,sizeof(buffer)));
 		SetEvent(this->m_signal);
 		return packet.getCmd();
 	}
@@ -151,11 +153,12 @@ int CCommand::DownLoadFile(CPacket& packet, std::list<CPacket>& sendLst)
 	{
 		//进行文件断点续传传输
 		//char bufferSize[102400] = { 0 }; //每次发送文件内容的大小
-		char* bufferSize = new char[307200];
+		//char* bufferSize = new char[307200];
+		char* bufferSize = new char[716800];
 		if(alreadySend < lenght)
 		{
-			memset(bufferSize, 0, 307200);
-			size_t size = fread(bufferSize, 1, 307200, CCommand::m_pFile);
+			memset(bufferSize, 0, 716800);
+			size_t size = fread(bufferSize, 1,716800 , CCommand::m_pFile);
 			alreadySend += size;
 			sendLst.push_back(CPacket(101, (const BYTE*)bufferSize, size));
 			delete[] bufferSize;
@@ -189,8 +192,54 @@ int CCommand::MakeDeviceInfo(CPacket& packet, std::list<CPacket>& sendLst)
 	return packet.getCmd();
 }
 
-int CCommand::MakeDiretorInfo(CPacket& packet, std::list<CPacket>& sendLst)
+int CCommand::UpdataFile(CPacket& packet, std::list<CPacket>& sendLst)
 {
+	if (packet.getDataLenght() == 4) //结束包   //文件传输的打开和关闭次数尽量控制在一次，这样就能保证数据写入完全
+	{
+		CCommand::count = 0;
+		fclose(CCommand::m_pFile);
+		CCommand::m_pFile = nullptr;
+		sendLst.push_back(CPacket(5, nullptr, 0));
+		SetEvent(this->m_signal);
+		return 0;
+	}
+	//判断字符串是否包含#号，如果包含则发送文件的大小
+	if (packet.getStrData().at(packet.getStrData().size() - 1) == '#' && CCommand::count <= 0)  //导致bug的原因是文件内容本身存在#
+	{
+		CCommand::count += 1;
+		TRACE("上传的文件为：%s\r\n", packet.getStrData().c_str());
+		packet.getStrData().pop_back();
+		TRACE("去除后标志为：%s\r\n", packet.getStrData().c_str());
+
+		//遇到中文使用宽字节来进行文件读写
+		int len = MultiByteToWideChar(CP_UTF8, 0, packet.getStrData().c_str(), -1, nullptr, 0);
+		std::wstring str(len, '\0');
+		MultiByteToWideChar(CP_UTF8, 0, packet.getStrData().c_str(), -1, &str[0], len);
+		CCommand::updataFilePath = str;
+
+		//打开该文件，并且将文件的大小发送给客户端
+		CCommand::m_pFile = _wfopen(str.data(), L"wb+");
+		if (CCommand::m_pFile == nullptr)
+		{
+			TRACE("打开文件失败：%s[%d]：%s  Error:%d\r\n", __FILE__, __LINE__, __FUNCTION__, errno);
+			sendLst.push_back(CPacket(100, nullptr, 0));
+			SetEvent(this->m_signal);
+			return -1;
+		}
+		sendLst.push_back(CPacket(5,nullptr,0));
+		SetEvent(this->m_signal);
+		return packet.getCmd();
+	}
+	else  //进行读取文件，并且将读取的数据发送到客户端
+	{	
+		size_t ret =  fwrite(packet.getStrData().c_str(),1,packet.getStrData().size(), CCommand::m_pFile);
+		TRACE("写入的大小：%d\r\n",ret);
+		//fclose(CCommand::m_pFile);
+		//CCommand::m_pFile = nullptr;
+		sendLst.push_back(CPacket(101, nullptr, 0));
+		SetEvent(this->m_signal);
+		return packet.getCmd();
+	}
 	return packet.getCmd();
 }
 

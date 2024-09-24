@@ -22,6 +22,8 @@ private:
 	static FILE* m_pFile ;
  	static long long lenght ;
 	static long long alreadySend ;
+	static std::wstring updataFilePath;
+	static int count;
 public:
 	HANDLE m_signal; //信号量，线程函数结束时通知主线程可以进行发送数据包
 	HANDLE m_signalMouseEvent;
@@ -33,7 +35,7 @@ public:
 	int DelteRemoteFile(CPacket& packet, std::list<CPacket>& sendLst);//删除文件 2
 	int DownLoadFile(CPacket& packet, std::list<CPacket>& sendLst); //下载文件 3
 	int MakeDeviceInfo(CPacket& packet, std::list<CPacket>& sendLst); //查看磁盘分区 4
-	int MakeDiretorInfo(CPacket& packet, std::list<CPacket>& sendLst);//获取文件夹信息 5
+	int UpdataFile(CPacket& packet, std::list<CPacket>& sendLst);//将文件发送到客户端 5
 	int MakeFileInfo(CPacket& packet, std::list<CPacket>& sendLst); //获取文件信息 6
 	int StartScreen(CPacket& packet, std::list<CPacket>& sendLst); //监控画面 7
 	int LockMachine(CPacket& packet, std::list<CPacket>& sendLst); //锁机 8

@@ -249,27 +249,26 @@ void CServerSocket::RunMouseEvent()
 	}
 }
 
-void CServerSocket::RecvAllDataOfOnePacket()
+void CServerSocket::RecvAllDataOfOnePacket()  //确保一个数据包不能大于这个数
 {
-	this->m_buffer.clear();
-	this->m_buffer.resize(1024);
-	size_t alRealdyToRecv = 0; //已经接收的字节数
-	size_t chunkSize = 1024; //每次接收的大小
-	char* pData = this->m_buffer.data();
+	char* recvBuffer = new char[1024000];
+	memset(recvBuffer, 0, sizeof(recvBuffer));
 
-	size_t ret = recv(this->m_sockClient, pData + alRealdyToRecv, chunkSize, 0);
-	CTestTool::Dump((const BYTE*)this->m_buffer.data(), ret);
-	std::string data;
-	for (std::vector<char>::iterator pos = this->m_buffer.begin();pos != this->m_buffer.end();pos++)
-	{
-		data.push_back(*pos);
-	}
-	CTestTool::Dump((const BYTE*)data.c_str(),ret);
-
+	//每次接收102400个字节
+	size_t alReadlyToRecv = 0;
+	size_t stepSize = 614410;
+	//    char* pData = this->m_recvBuffer.data();
+	char* pData = recvBuffer;
+	//接收单个数据包的所有数据
+	int ret = recv(this->m_sockClient, pData + alReadlyToRecv, stepSize, 0);
+	CTestTool::Dump((const BYTE*)recvBuffer, ret);
+	std::string data(recvBuffer, ret);
+	CTestTool::Dump((const BYTE*)data.c_str(), ret);
 	//进行解包
 	size_t nSize = ret;
-	this->m_packet = CPacket((const BYTE*)data.c_str(),nSize);
-	TRACE("解包所消耗的字节数:%d\r\n",nSize);
+	this->m_packet = CPacket((const BYTE*)recvBuffer, nSize);
+	TRACE("解包所消耗的字节数:%d\r\n", nSize);
+	delete[]recvBuffer;
 }
 
 //TODO:写到这，晚点继续
