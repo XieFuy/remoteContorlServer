@@ -17,6 +17,7 @@ private:
 	SOCKADDR_IN m_sockAddrSer;
 	SOCKADDR_IN m_sockAddrCli;
 	SOCKET m_sockClient;
+	static SOCKET* m_sockClientPtr;
 	SOCKET m_sockServer;
 	std::list<CPacket> m_sendListMouseEvent;
 	std::list<CPacket> m_sendList; //发送队列
@@ -60,5 +61,6 @@ public:
 	void RunMouseEvent();
 	size_t SendAllDataOfOnePacket(CPacket& packet); //将数据包发送到客户端
 	size_t SendAllDataOfOnePacketMouseEvent(CPacket& packet);
+	static SOCKET& getSockClient();
 };
 

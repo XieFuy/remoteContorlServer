@@ -11,6 +11,8 @@
 #include<direct.h>
 #include"fileInfo.h"
 #include<string.h>
+#include "ServerSocket.h"
+
 //命令类 包含命令执行函数
 class CCommand:public CThreadFuncBase
 {
@@ -25,6 +27,8 @@ private:
 	static std::wstring updataFilePath;
 	static int count;
 public:
+	static char* packet;
+	static size_t nSize; //一个数据包的大小
 	HANDLE m_signal; //信号量，线程函数结束时通知主线程可以进行发送数据包
 	HANDLE m_signalMouseEvent;
 	int ExecCommand(CPacket& packet,std::list<CPacket>& sendLst); //执行命令

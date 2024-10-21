@@ -6,6 +6,8 @@ long long CCommand::alreadySend = 0;
 long long CCommand::lenght = 0;
 std::wstring CCommand::updataFilePath = L"";
 int CCommand::count = 0;
+char* CCommand::packet = nullptr;
+size_t CCommand::nSize = 0;
 
 int CCommand::testConnect(CPacket& packet, std::list<CPacket>& sendLst)
 {
@@ -51,7 +53,7 @@ int CCommand::DealMouseEvent(CPacket &packet, std::list<CPacket>& sendLst)
 			mouse_event(MOUSEEVENTF_RIGHTUP,mouseEvent.x,mouseEvent.y,0,GetMessageExtraInfo());
 		}
 	}
-	sendLst.push_back(CPacket(10,nullptr,0));
+	//sendLst.push_back(CPacket(10,nullptr,0));
 	SetEvent(this->m_signalMouseEvent);
 	return packet.getCmd();
 }
@@ -154,13 +156,18 @@ int CCommand::DownLoadFile(CPacket& packet, std::list<CPacket>& sendLst)
 		//进行文件断点续传传输
 		//char bufferSize[102400] = { 0 }; //每次发送文件内容的大小
 		//char* bufferSize = new char[307200];
-		char* bufferSize = new char[716800];
+		char* bufferSize = new char[1024000];
 		if(alreadySend < lenght)
 		{
-			memset(bufferSize, 0, 716800);
-			size_t size = fread(bufferSize, 1,716800 , CCommand::m_pFile);
+			memset(bufferSize, 0, 1024000);
+			size_t size = fread(bufferSize, 1, 1024000, CCommand::m_pFile);
 			alreadySend += size;
-			sendLst.push_back(CPacket(101, (const BYTE*)bufferSize, size));
+			//直接存入buffer中进行写入
+			CCommand::packet = new char[size];
+			memset(CCommand::packet,0,size);
+			memcpy(CCommand::packet,bufferSize,size);
+			CCommand::nSize = size;
+			//sendLst.push_back(CPacket(101, (const BYTE*)bufferSize, size));
 			delete[] bufferSize;
 			SetEvent(this->m_signal);
 			return packet.getCmd();
@@ -199,7 +206,7 @@ int CCommand::UpdataFile(CPacket& packet, std::list<CPacket>& sendLst)
 		CCommand::count = 0;
 		fclose(CCommand::m_pFile);
 		CCommand::m_pFile = nullptr;
-		sendLst.push_back(CPacket(5, nullptr, 0));
+		//sendLst.push_back(CPacket(5, nullptr, 0));
 		SetEvent(this->m_signal);
 		return 0;
 	}
@@ -231,12 +238,9 @@ int CCommand::UpdataFile(CPacket& packet, std::list<CPacket>& sendLst)
 		return packet.getCmd();
 	}
 	else  //进行读取文件，并且将读取的数据发送到客户端
-	{	
-		size_t ret =  fwrite(packet.getStrData().c_str(),1,packet.getStrData().size(), CCommand::m_pFile);
-		TRACE("写入的大小：%d\r\n",ret);
-		//fclose(CCommand::m_pFile);
-		//CCommand::m_pFile = nullptr;
-		sendLst.push_back(CPacket(101, nullptr, 0));
+	{			
+		TRACE("接收的大小: %d\r\n",packet.getStrData().size());
+		size_t ret2 = fwrite(packet.getStrData().c_str(), 1, packet.getStrData().size(),CCommand::m_pFile);	
 		SetEvent(this->m_signal);
 		return packet.getCmd();
 	}
@@ -357,7 +361,10 @@ int CCommand::StartScreen(CPacket& packet, std::list<CPacket>& sendLst)
 
 		/*将数据封装成包，转发给客户端*/
 
-		sendLst.push_back(CPacket(7, pData, nSize));
+		CCommand::nSize = nSize;
+		CCommand::packet = new char[nSize]; //整个包填满的都是数据
+		memcpy(CCommand::packet,pData,nSize);
+		//sendLst.push_back(CPacket(7, pData, nSize));
 		/*	对全局堆内存进行解锁*/
 		GlobalUnlock(hMem);
 	}
@@ -367,6 +374,35 @@ int CCommand::StartScreen(CPacket& packet, std::list<CPacket>& sendLst)
 	GlobalFree(hMem);
 	//对CImage对象的上下文进行释放
 	screen.ReleaseDC();
+	/*screen.Save("./test.png",Gdiplus::ImageFormatPNG);
+	long long fileSize = 0;
+	FILE* pFile =  _wfopen(L"./test.png",L"rb+");
+	if (pFile == nullptr)
+	{
+		screen.ReleaseDC();
+		SetEvent(this->m_signal);
+		return packet.getCmd();
+	}
+
+	//计算文件大小
+	fseek(pFile,0,SEEK_END);
+	fileSize =  _ftelli64(pFile);
+	fseek(pFile,0,SEEK_SET);
+
+	char* sendBuffer = new char[fileSize];
+	memset(sendBuffer,0,fileSize);
+	long long alReadyRead = 0;
+	while (alReadyRead < fileSize)
+	{
+		size_t ret =  fread(sendBuffer,1,fileSize,pFile);
+		if (ret > 0)
+		{
+			alReadyRead += ret;
+		}
+	}
+	fclose(pFile);
+	sendLst.push_back(CPacket(7,(const BYTE*)sendBuffer,fileSize));
+	delete []sendBuffer;*/
 	SetEvent(this->m_signal);
 	return packet.getCmd();
 }

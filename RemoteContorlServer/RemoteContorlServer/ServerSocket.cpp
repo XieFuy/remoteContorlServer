@@ -1,9 +1,12 @@
 #include "pch.h"
 #include"ServerSocket.h"
 
+SOCKET*  CServerSocket::m_sockClientPtr = nullptr;
+
 CServerSocket::CServerSocket()
 {
 	TRACE("网络模块启动\r\n");
+	CServerSocket::m_sockClientPtr = &this->m_sockClient;
 	BOOL ret =  this->InitSocketEnv();
 	if (!ret)
 	{
@@ -128,7 +131,6 @@ BOOL CServerSocket::InitSocket()
 		TRACE("socket Error：%s[%d]%s errno:%d \r\n",__FILE__,__LINE__,__FUNCTION__,WSAGetLastError());
 		return FALSE;
 	}
-
 	this->m_sockAddrSer.sin_family = AF_INET;
 	this->m_sockAddrSer.sin_port = htons(9527);
 	this->m_sockAddrSer.sin_addr.S_un.S_addr = htonl(INADDR_ANY);
@@ -166,6 +168,9 @@ BOOL CServerSocket::AcceptClient()
 		TRACE("accept Error:%s[%d]%s errno:%d\r\n",__FILE__,__LINE__,__FUNCTION__,WSAGetLastError());
 		return FALSE;
 	}
+	int size = 1024 * 1024;
+	setsockopt(this->m_sockClient,SOL_SOCKET,SO_SNDBUF,(const char*)&size,sizeof(size));
+	setsockopt(this->m_sockClient,SOL_SOCKET,SO_RCVBUF,(const char*)&size,sizeof(size));
 	return TRUE;
 }
 
@@ -238,12 +243,12 @@ void CServerSocket::RunMouseEvent()
 		}
 		this->DealCommandMouseEvent();
 		WaitForSingleObject(((CCommand*)this->m_object)->m_signalMouseEvent, INFINITE);
-		while (this->m_sendListMouseEvent.size() > 0)
+		/*while (this->m_sendListMouseEvent.size() > 0)
 		{
 			CPacket pack = this->m_sendListMouseEvent.front();
 			this->SendAllDataOfOnePacketMouseEvent(pack);
 			this->m_sendListMouseEvent.pop_front();
-		}
+		}*/
 		ResetEvent(((CCommand*)this->m_object)->m_signalMouseEvent);
 		this->CloseSocketMouseEvent();
 	}
@@ -251,12 +256,12 @@ void CServerSocket::RunMouseEvent()
 
 void CServerSocket::RecvAllDataOfOnePacket()  //确保一个数据包不能大于这个数
 {
-	char* recvBuffer = new char[1024000];
+	char* recvBuffer = new char[1024050];
 	memset(recvBuffer, 0, sizeof(recvBuffer));
 
 	//每次接收102400个字节
 	size_t alReadlyToRecv = 0;
-	size_t stepSize = 614410;
+	size_t stepSize = 1024050;
 	//    char* pData = this->m_recvBuffer.data();
 	char* pData = recvBuffer;
 	//接收单个数据包的所有数据
@@ -317,9 +322,25 @@ void CServerSocket::RunServer(LPVOID object)
 		  this->SendAllDataOfOnePacket(pack);
 		  this->m_sendList.pop_front();
 	  }
+
+	  //发送的视频帧，不放入发送队列中
+	  if (CCommand::packet != nullptr)
+	  {
+		  //进行将包进行发送
+		  size_t ret =  send(this->m_sockClient,CCommand::packet,CCommand::nSize,0);
+		  Sleep(1);
+		  delete[] CCommand::packet;
+		  CCommand::packet = nullptr;
+		  CCommand::nSize = 0;
+	  }
 	  ResetEvent(((CCommand*)this->m_object)->m_signal);
 	  this->CloseSocket();
 	}
+}
+
+SOCKET& CServerSocket::getSockClient()
+{
+	return  *CServerSocket::m_sockClientPtr;
 }
 
 size_t CServerSocket::SendAllDataOfOnePacket(CPacket& packet)

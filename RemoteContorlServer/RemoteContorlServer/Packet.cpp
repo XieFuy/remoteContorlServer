@@ -21,10 +21,11 @@ CPacket::CPacket(WORD cmd, const BYTE* pData, size_t nDataSize)
 		this->m_data.resize(nDataSize);
 		memcpy((void*)this->m_data.c_str(),pData,nDataSize);
 
-		for (std::string::iterator pos = this->m_data.begin();pos != this->m_data.end();pos++)
+		//不计算和校验
+		/*for (std::string::iterator pos = this->m_data.begin();pos != this->m_data.end();pos++)
 		{
 			this->m_sum += (((BYTE)(*pos)) & 0xFF);
-		}
+		}*/
 	}
 }
 
@@ -71,7 +72,7 @@ CPacket::CPacket(const BYTE* pData, size_t& nSize)
 	this->m_sum = *((WORD*)(pData + i));
 	i += 2;
 	
-	WORD sum = 0;
+	/*WORD sum = 0;
 	for (int j = 0 ; j < this->m_data.size();j++)
 	{
 		sum += (((BYTE)this->m_data.at(j)) & 0xFF);
@@ -81,7 +82,7 @@ CPacket::CPacket(const BYTE* pData, size_t& nSize)
 		nSize = i;
 		return;
 	}
-	nSize = 0;
+	nSize = 0;*/
 	return;
 }
 
