@@ -240,7 +240,17 @@ int CCommand::UpdataFile(CPacket& packet, std::list<CPacket>& sendLst)
 	else  //进行读取文件，并且将读取的数据发送到客户端
 	{			
 		TRACE("接收的大小: %d\r\n",packet.getStrData().size());
-		size_t ret2 = fwrite(packet.getStrData().c_str(), 1, packet.getStrData().size(),CCommand::m_pFile);	
+		char* recvBuffer = new char[1024000];
+		size_t ret = recv(CServerSocket::getSockClient(),recvBuffer,1024000,0);
+		if (ret <= 0)
+		{
+			SetEvent(this->m_signal);
+			return packet.getCmd();
+		}
+		size_t ret2 = fwrite(recvBuffer, 1, ret, CCommand::m_pFile);
+		delete recvBuffer;
+		send(CServerSocket::getSockClient(),"1",1,0);
+		//sendLst.push_back(CPacket(5,nullptr,0));
 		SetEvent(this->m_signal);
 		return packet.getCmd();
 	}

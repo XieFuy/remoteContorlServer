@@ -256,12 +256,12 @@ void CServerSocket::RunMouseEvent()
 
 void CServerSocket::RecvAllDataOfOnePacket()  //确保一个数据包不能大于这个数
 {
-	char* recvBuffer = new char[1024050];
+	char* recvBuffer = new char[1024010];
 	memset(recvBuffer, 0, sizeof(recvBuffer));
 
 	//每次接收102400个字节
 	size_t alReadlyToRecv = 0;
-	size_t stepSize = 1024050;
+	size_t stepSize = 1024010;
 	//    char* pData = this->m_recvBuffer.data();
 	char* pData = recvBuffer;
 	//接收单个数据包的所有数据
